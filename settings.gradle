@@ -1,0 +1,2 @@
+include ':app',':kefu-easeui',':player'
+//rootProject.name = "huanxin-kefu-easeu"
