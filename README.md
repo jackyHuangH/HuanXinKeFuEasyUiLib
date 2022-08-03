@@ -13,6 +13,8 @@
   
   dependencies {
        //使用androidx，support版本用户请尽快适配Androidx
-	   implementation 'com.github.jackyHuangH:HuanXinKeFuEasyUiLib:1.2.5'
+       //2个依赖都必须添加！！！
+      implementation 'com.github.jackyHuangH.HuanXinKeFuEasyUiLib:kefu-easeui:1.2.5'
+      implementation 'com.github.jackyHuangH.HuanXinKeFuEasyUiLib:player:1.2.5'
   }
 ```
