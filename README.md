@@ -13,6 +13,6 @@
   
   dependencies {
        //使用androidx，support版本用户请尽快适配Androidx
-	   implementation 'com.github.jackyHuangH:HuanXinKeFuEasyUiLib:1.0.0'
+	   implementation 'com.github.jackyHuangH:HuanXinKeFuEasyUiLib:1.2.5'
   }
 ```
