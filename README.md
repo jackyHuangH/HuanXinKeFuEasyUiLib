@@ -12,8 +12,7 @@
   }
   
   dependencies {
-          //非androidx请选择不带'x'的版本
-	  implementation 'com.github.bigdongdong:huanxin-kefu-easeui:latest.release' //添加依赖
-	  
+       //使用androidx，support版本用户请尽快适配Androidx
+	   implementation 'com.github.jackyHuangH:HuanXinKeFuEasyUiLib:1.0.0'
   }
 ```
