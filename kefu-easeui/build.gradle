@@ -1,5 +1,5 @@
 apply plugin: 'com.android.library'
-
+apply plugin: 'com.github.dcendents.android-maven'
 
 android {
     compileSdkVersion 31
@@ -39,4 +39,3 @@ dependencies {
     api 'com.easemob:kefu-sdk:1.2.5'
     api project(path: ':player')
 }
-apply from: 'jcenter.gradle'
