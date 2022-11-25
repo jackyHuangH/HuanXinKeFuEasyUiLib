@@ -3,8 +3,10 @@ package com.hyphenate.helpdesk.easeui.ui;
 import android.Manifest;
 import android.annotation.SuppressLint;
 import android.app.Activity;
+import android.app.Dialog;
 import android.content.Context;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.media.MediaMetadataRetriever;
 import android.media.ThumbnailUtils;
@@ -13,23 +15,22 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.provider.MediaStore;
-import androidx.annotation.Nullable;
-import androidx.fragment.app.FragmentTransaction;
-import androidx.core.content.FileProvider;
-import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
-import androidx.swiperefreshlayout.widget.SwipeRefreshLayout.OnRefreshListener;
 import android.text.ClipboardManager;
 import android.text.TextUtils;
+import android.util.Log;
+import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.view.View.OnTouchListener;
 import android.view.ViewGroup;
+import android.view.Window;
 import android.view.WindowManager;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.ListView;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.hyphenate.chat.ChatClient;
 import com.hyphenate.chat.ChatManager;
@@ -63,6 +64,14 @@ import com.hyphenate.util.UriUtils;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.util.List;
+
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.core.app.ActivityCompat;
+import androidx.core.content.FileProvider;
+import androidx.fragment.app.FragmentTransaction;
+import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
+import androidx.swiperefreshlayout.widget.SwipeRefreshLayout.OnRefreshListener;
 
 /**
  * 可以直接new出来使用的聊天对话页面fragment，
@@ -118,6 +127,7 @@ public class ChatFragment extends BaseFragment implements ChatManager.MessageLis
     private QueueIdentityInfo queueIdentityInfo;
     private String titleName;
     protected TextView tvTipWaitCount;
+    private Dialog mNoticeDialog;
 
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
@@ -157,33 +167,104 @@ public class ChatFragment extends BaseFragment implements ChatManager.MessageLis
         titleName = fragmentArgs.getString(Config.EXTRA_TITLE_NAME);
         //在父类中调用了initView和setUpView两个方法
         super.onActivityCreated(savedInstanceState);
-        if (savedInstanceState != null){
+        if (savedInstanceState != null) {
             cameraFilePath = savedInstanceState.getString("cameraFilePath");
         }
         ChatClient.getInstance().chatManager().bindChat(toChatUsername);
-        PermissionsManager.getInstance().requestPermissionsIfNecessaryForResult(this, new String[]{Manifest.permission.RECORD_AUDIO, Manifest.permission.WRITE_EXTERNAL_STORAGE}, new PermissionsResultAction() {
-            @Override
-            public void onGranted() {
-
-            }
-
-            @Override
-            public void onDenied(String permission) {
-
-            }
-        });
+        //提示 需要申请存储和录音权限
+        initPermission();
         ChatClient.getInstance().chatManager().addAgentInputListener(agentInputListener);
 
         // 为测试获取账号用，无实际意义
         setUserNameView();
     }
 
-    private void setUserNameView(){
-        if (ChatClient.getInstance().isLoggedInBefore()){
+    //==================自增代码===============================
+
+    /**
+     * 请求开启通知权限
+     */
+    private void showPermissionNoticeDialog() {
+        View layout = LayoutInflater.from(requireContext()).inflate(R.layout.hd_dialog_permission_notice, null);
+        mNoticeDialog = new android.app.AlertDialog.Builder(requireContext(), R.style.Theme_Notice_Dialog).create();
+        mNoticeDialog.setCancelable(true);
+        mNoticeDialog.setCanceledOnTouchOutside(true);
+        mNoticeDialog.show();
+        Window window = mNoticeDialog.getWindow();
+        window.setGravity(Gravity.TOP);
+        WindowManager.LayoutParams attributes = window.getAttributes();
+        attributes.horizontalMargin = dip2px(requireContext(), 15.0F);
+        window.setContentView(layout);
+    }
+
+    private int dip2px(Context context, float dpValue) {
+        float scale = context.getResources().getDisplayMetrics().density;
+        return (int) (dpValue * scale + 0.5f);
+    }
+
+    private static final int PERMISSION_CODE = 11;
+
+
+    /**
+     * 申请权限
+     */
+    private void initPermission() {
+        String[] permissionsArray = new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE, Manifest.permission.RECORD_AUDIO};
+        if (Build.VERSION.SDK_INT > Build.VERSION_CODES.LOLLIPOP) {
+            boolean storageDenied = ActivityCompat.checkSelfPermission(requireContext(), permissionsArray[0]) != PackageManager.PERMISSION_GRANTED;
+            boolean recordDenied = ActivityCompat.checkSelfPermission(requireContext(), permissionsArray[1]) != PackageManager.PERMISSION_GRANTED;
+            if (storageDenied || recordDenied) {
+                requestPermissions(permissionsArray, PERMISSION_CODE);
+                showPermissionNoticeDialog();
+            }
+        }
+        //SDK自带方法无法回调权限结果，不用
+//        PermissionsManager.getInstance().requestPermissionsIfNecessaryForResult(this, permissionsArray,
+//                new PermissionsResultAction() {
+//                    @Override
+//                    public void onGranted() {
+//                        if (mNoticeDialog != null) {
+//                            mNoticeDialog.dismiss();
+//                        }
+//                    }
+//
+//                    @Override
+//                    public void onDenied(String permission) {
+//                        if (mNoticeDialog != null) {
+//                            mNoticeDialog.dismiss();
+//                        }
+//                    }
+//                });
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        if (requestCode == PERMISSION_CODE) {
+            //不管是否授权，关闭提示弹窗
+            if (mNoticeDialog != null && mNoticeDialog.isShowing()) {
+                mNoticeDialog.dismiss();
+            }
+            if (grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                Log.d("huanxin", "授权成功");
+            } else if (!ActivityCompat.shouldShowRequestPermissionRationale(requireActivity(), permissions[0])) {
+                Log.d("huanxin", "拒绝并勾选了不再提醒，不会弹了，需要引导用户去设置页");
+                Toast.makeText(requireContext(),"请到应用设置中授予存储和音频权限",Toast.LENGTH_LONG).show();
+            } else {
+                Log.d("huanxin", "拒绝了授权,下次还会再弹");
+            }
+            Log.i("HuanXinChat", "申请的权限为：" + permissions + ",申请结果：" + grantResults);
+        }
+    }
+
+    //=====================================================
+
+    private void setUserNameView() {
+        if (ChatClient.getInstance().isLoggedInBefore()) {
             String currentUsername = ChatClient.getInstance().currentUserName();
             if (getView() != null) {
                 TextView tvUname = (TextView) getView().findViewById(R.id.tv_username);
-                if (tvUname != null){
+                if (tvUname != null) {
                     tvUname.setText(currentUsername);
                 }
             }
@@ -215,15 +296,15 @@ public class ChatFragment extends BaseFragment implements ChatManager.MessageLis
 
             @Override
             public void onBigExpressionClicked(Emojicon emojicon) {
-	            if (!TextUtils.isEmpty(emojicon.getBigIconRemotePath())) {
+                if (!TextUtils.isEmpty(emojicon.getBigIconRemotePath())) {
                     sendCustomEmojiMessage(emojicon.getBigIconRemotePath());
                 } else if (!TextUtils.isEmpty(emojicon.getIconRemotePath())) {
                     sendCustomEmojiMessage(emojicon.getIconRemotePath());
                 } else if (!TextUtils.isEmpty(emojicon.getBigIconPath())) {
-		            sendImageMessage(emojicon.getBigIconPath());
-	            } else if (!TextUtils.isEmpty(emojicon.getIconPath())) {
+                    sendImageMessage(emojicon.getBigIconPath());
+                } else if (!TextUtils.isEmpty(emojicon.getIconPath())) {
                     sendImageMessage(emojicon.getIconPath());
-	            }
+                }
             }
 
             @Override
@@ -246,30 +327,30 @@ public class ChatFragment extends BaseFragment implements ChatManager.MessageLis
     }
 
     ChatManager.VisitorWaitListener visitorWaitListener = new ChatManager.VisitorWaitListener() {
-	    @Override
-	    public void waitCount(final int num) {
-		    if (getActivity() == null){
-			    return;
-		    }
+        @Override
+        public void waitCount(final int num) {
+            if (getActivity() == null) {
+                return;
+            }
 //            EMLog.d(TAG, "waitCount--num:" + num);
-		    getActivity().runOnUiThread(new Runnable() {
-			    @Override
-			    public void run() {
-				    if (num > 0){
-					    tvTipWaitCount.setVisibility(View.VISIBLE);
-					    tvTipWaitCount.setText(getString(R.string.current_wait_count, num));
-				    }else{
-					    tvTipWaitCount.setVisibility(View.GONE);
-				    }
-			    }
-		    });
-	    }
+            getActivity().runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    if (num > 0) {
+                        tvTipWaitCount.setVisibility(View.VISIBLE);
+                        tvTipWaitCount.setText(getString(R.string.current_wait_count, num));
+                    } else {
+                        tvTipWaitCount.setVisibility(View.GONE);
+                    }
+                }
+            });
+        }
     };
 
     ChatManager.AgentInputListener agentInputListener = new ChatManager.AgentInputListener() {
         @Override
         public void onInputState(final String input) {
-            if (getActivity() == null){
+            if (getActivity() == null) {
                 return;
             }
             getActivity().runOnUiThread(new Runnable() {
@@ -311,7 +392,7 @@ public class ChatFragment extends BaseFragment implements ChatManager.MessageLis
 
             @Override
             public void onClick(View v) {
-                if(getActivity() != null){
+                if (getActivity() != null) {
                     getActivity().finish();
                 }
             }
@@ -405,7 +486,7 @@ public class ChatFragment extends BaseFragment implements ChatManager.MessageLis
 
             @Override
             public boolean onTouch(View v, MotionEvent event) {
-                if (!inputMenu.isVoiceRecording()){//录音时，点击列表不做操作
+                if (!inputMenu.isVoiceRecording()) {//录音时，点击列表不做操作
                     hideKeyboard();
                     inputMenu.hideExtendMenuContainer();
                 }
@@ -613,7 +694,7 @@ public class ChatFragment extends BaseFragment implements ChatManager.MessageLis
 
         @Override
         public void onExtendMenuItemClick(int itemId, View view) {
-            if (getActivity() == null){
+            if (getActivity() == null) {
                 return;
             }
             if (chatFragmentListener != null) {
@@ -708,7 +789,7 @@ public class ChatFragment extends BaseFragment implements ChatManager.MessageLis
     public void onSaveInstanceState(Bundle outState) {
         super.onSaveInstanceState(outState);
         outState.putBoolean(STATE_SAVE_IS_HIDDEN, isHidden());
-        if (cameraFilePath != null){
+        if (cameraFilePath != null) {
             outState.putString("cameraFile", cameraFilePath);
         }
     }
@@ -721,11 +802,11 @@ public class ChatFragment extends BaseFragment implements ChatManager.MessageLis
             ToastHelper.show(getActivity(), R.string.sd_card_does_not_exist);
             return;
         }
-        try{
+        try {
             File cameraFile = new File(PathUtil.getInstance().getImagePath(), ChatClient.getInstance().currentUserName()
                     + System.currentTimeMillis() + ".jpg");
             cameraFilePath = cameraFile.getAbsolutePath();
-            if (!cameraFile.getParentFile().exists()){
+            if (!cameraFile.getParentFile().exists()) {
                 cameraFile.getParentFile().mkdirs();
             }
             Intent intent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
@@ -734,10 +815,10 @@ public class ChatFragment extends BaseFragment implements ChatManager.MessageLis
             } else {
                 intent.setFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
                 intent.putExtra(MediaStore.EXTRA_OUTPUT, FileProvider.getUriForFile(getContext().getApplicationContext(),
-                        getContext().getPackageName() +  ".fileprovider", cameraFile));
+                        getContext().getPackageName() + ".fileprovider", cameraFile));
             }
             startActivityForResult(intent, REQUEST_CODE_CAMERA);
-        }catch (Exception e){
+        } catch (Exception e) {
             e.printStackTrace();
         }
     }
@@ -872,7 +953,7 @@ public class ChatFragment extends BaseFragment implements ChatManager.MessageLis
     // 发送消息方法
     //=============================================
     protected void sendTextMessage(String content) {
-        if (content != null && content.length() > 1500){
+        if (content != null && content.length() > 1500) {
             ToastHelper.show(getActivity(), R.string.message_content_beyond_limit);
             return;
         }
@@ -883,7 +964,7 @@ public class ChatFragment extends BaseFragment implements ChatManager.MessageLis
     }
 
     protected void sendVoiceMessage(String filePath, int length) {
-        if (TextUtils.isEmpty(filePath)){
+        if (TextUtils.isEmpty(filePath)) {
             return;
         }
         Message message = Message.createVoiceSendMessage(filePath, length, toChatUsername);
@@ -893,11 +974,11 @@ public class ChatFragment extends BaseFragment implements ChatManager.MessageLis
     }
 
     protected void sendImageMessage(String imagePath) {
-        if (TextUtils.isEmpty(imagePath)){
+        if (TextUtils.isEmpty(imagePath)) {
             return;
         }
         File imageFile = new File(imagePath);
-        if (!imageFile.exists()){
+        if (!imageFile.exists()) {
             return;
         }
 
@@ -917,7 +998,7 @@ public class ChatFragment extends BaseFragment implements ChatManager.MessageLis
     }
 
     protected void sendCustomEmojiMessage(String imagePath) {
-        if (TextUtils.isEmpty(imagePath)){
+        if (TextUtils.isEmpty(imagePath)) {
             return;
         }
 
@@ -942,7 +1023,7 @@ public class ChatFragment extends BaseFragment implements ChatManager.MessageLis
         messageList.refreshSelectLastDelay(MessageList.defaultDelay);
     }
 
-    protected void sendLocationMessage(double latitude, double longitude, String locationAddress, String toChatUsername){
+    protected void sendLocationMessage(double latitude, double longitude, String locationAddress, String toChatUsername) {
         Message message = Message.createLocationSendMessage(latitude, longitude, locationAddress, toChatUsername);
         attachMessageAttrs(message);
         ChatClient.getInstance().chatManager().sendMessage(message);
@@ -963,14 +1044,14 @@ public class ChatFragment extends BaseFragment implements ChatManager.MessageLis
         messageList.refreshSelectLastDelay(MessageList.defaultDelay);
     }
 
-    public void attachMessageAttrs(Message message){
-        if (visitorInfo != null){
+    public void attachMessageAttrs(Message message) {
+        if (visitorInfo != null) {
             message.addContent(visitorInfo);
         }
-        if (queueIdentityInfo != null){
+        if (queueIdentityInfo != null) {
             message.addContent(queueIdentityInfo);
         }
-        if (agentIdentityInfo != null){
+        if (agentIdentityInfo != null) {
             message.addContent(agentIdentityInfo);
         }
 
@@ -981,7 +1062,6 @@ public class ChatFragment extends BaseFragment implements ChatManager.MessageLis
         super.onPause();
         MediaManager.pause();
     }
-
 
 
 }
