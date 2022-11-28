@@ -191,15 +191,9 @@ public class ChatFragment extends BaseFragment implements ChatManager.MessageLis
         mNoticeDialog.setCanceledOnTouchOutside(true);
         mNoticeDialog.show();
         Window window = mNoticeDialog.getWindow();
+        window.setLayout(WindowManager.LayoutParams.MATCH_PARENT, WindowManager.LayoutParams.WRAP_CONTENT);
         window.setGravity(Gravity.TOP);
-        WindowManager.LayoutParams attributes = window.getAttributes();
-        attributes.horizontalMargin = dip2px(requireContext(), 15.0F);
         window.setContentView(layout);
-    }
-
-    private int dip2px(Context context, float dpValue) {
-        float scale = context.getResources().getDisplayMetrics().density;
-        return (int) (dpValue * scale + 0.5f);
     }
 
     private static final int PERMISSION_CODE = 11;

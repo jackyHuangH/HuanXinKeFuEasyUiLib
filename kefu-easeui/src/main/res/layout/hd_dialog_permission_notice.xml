@@ -4,21 +4,19 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:layout_gravity="top"
-    android:layout_marginHorizontal="15dp"
-    android:background="@android:color/transparent"
     android:orientation="vertical">
 
     <androidx.cardview.widget.CardView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="30dp"
+        android:layout_marginHorizontal="8dp"
+        android:layout_marginTop="10dp"
         app:cardBackgroundColor="@android:color/white"
         app:cardCornerRadius="4dp"
-        app:cardElevation="5dp"
-        app:cardMaxElevation="5dp"
+        app:cardElevation="8dp"
+        app:cardMaxElevation="8dp"
         app:cardPreventCornerOverlap="false"
-        app:cardUseCompatPadding="false">
-
+        app:cardUseCompatPadding="true">
 
         <LinearLayout
             android:layout_width="match_parent"
