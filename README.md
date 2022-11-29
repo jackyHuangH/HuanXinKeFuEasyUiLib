@@ -1,4 +1,4 @@
-# HuanXinKeFuEasyUiLib https://img.shields.io/github/v/release/jackyHuangH/HuanXinKeFuEasyUiLib
+# HuanXinKeFuEasyUiLib ![最新版本](https://img.shields.io/github/v/release/jackyHuangH/HuanXinKeFuEasyUiLib)
 环信客服SDK二次封装，基于huanxinkefusdk-1.2.5, glide-4.13.1
 
 # 项目配置
