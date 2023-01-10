@@ -18,7 +18,7 @@
     <uses-permission android:name="android.permission.ACCESS_WIFI_STATE"/>
     <uses-permission android:name="android.permission.WAKE_LOCK"/>
     <uses-permission android:name="android.permission.READ_PHONE_STATE"/>
-    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
+<!--    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>-->
     <uses-permission android:name="com.android.launcher.permission.READ_SETTINGS"/>
     <uses-permission android:name="android.permission.BROADCAST_STICKY"/>
     <uses-permission android:name="android.permission.CHANGE_WIFI_STATE"/>
@@ -88,7 +88,7 @@
             </intent-filter>
             <!-- 可选filter -->
             <intent-filter>
-                <action android:name="android.intent.action.BOOT_COMPLETED"/>
+<!--                <action android:name="android.intent.action.BOOT_COMPLETED"/>-->
                 <action android:name="android.intent.action.USER_PRESENT"/>
             </intent-filter>
         </receiver>
