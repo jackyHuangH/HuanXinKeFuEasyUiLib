@@ -81,11 +81,10 @@
 
         <!-- 声明sdk所需的receiver -->
         <receiver android:name="com.hyphenate.chat.EMMonitorReceiver">
-            <intent-filter>
-                <action android:name="android.intent.action.PACKAGE_REMOVED"/>
-
-                <data android:scheme="package"/>
-            </intent-filter>
+<!--            <intent-filter>-->
+<!--                <action android:name="android.intent.action.PACKAGE_REMOVED"/>-->
+<!--                <data android:scheme="package"/>-->
+<!--            </intent-filter>-->
             <!-- 可选filter -->
             <intent-filter>
 <!--                <action android:name="android.intent.action.BOOT_COMPLETED"/>-->
